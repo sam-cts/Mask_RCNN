@@ -77,9 +77,9 @@ for i, info in enumerate(dataset.class_info):
 image_ids = np.random.choice(dataset.image_ids, 4)
 # print(image_ids, type(image_ids))
 
-image = dataset.load_image(5)
-mask, class_ids = dataset.load_mask(5)
-visualize.display_top_masks(image, mask, class_ids, dataset.class_names)
+# image = dataset.load_image(1)
+# mask, class_ids = dataset.load_mask(1)
+# visualize.display_top_masks(image, mask, class_ids, dataset.class_names)
 
 #%%
 for image_id in image_ids:

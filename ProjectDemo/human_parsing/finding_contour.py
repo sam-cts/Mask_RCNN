@@ -4,7 +4,7 @@ import sys
 import cv2 as cv
 import numpy as np 
 import matplotlib.pyplot as plt 
-
+import skimage.draw
 # Root directory of the project
 ROOT_DIR = os.path.abspath("../../")
 image_dir = ROOT_DIR+"/datasets/lip/train/train_segmentations/"
@@ -68,18 +68,23 @@ img_seg_cvt2 = img_seg_cvt.copy()
 img_seg_cvt2[img_seg_cvt2 != 15] = 0
 print("Claculate for class:", 15)
 
-contours, _ = cv.findContours(
-    img_seg_cvt2, cv.RETR_LIST, cv.CHAIN_APPROX_NONE)    # Find contours of the shape
-
-contours_gt = []
-contours_x = []
-contours_y = []
+contours, _ = cv.findContours(img_seg_cvt2, 
+    cv.RETR_LIST, cv.CHAIN_APPROX_NONE)    # Find contours of the shape
+h, w = img_seg_cvt2.shape[:2]
 for i in range(len(contours)):
     for j in range(len(contours[i])):
-        print(contours[i][j])
-        contours_gt.append(contours[i][j][0].tolist())
-        contours_x.append(contours[i][j][0][0])
-        contours_y.append(contours[i][j][0][1])
+        mask_temp = np.zeros([h, 
+                                w, 
+                                1,],
+                                dtype=np.uint8)
+        print(contours[i][j][0][1], contours[i][j][0][0])
+        # rr, cc = skimage.draw.polygon(contours[i][j][0][1], contours[i][j][0][0])
+        # mask_temp[rr, cc, i] = 1
+
+
+
+
+
 #%%
 classes_seg = np.unique(img_seg_cvt)
 seg_contours = []
