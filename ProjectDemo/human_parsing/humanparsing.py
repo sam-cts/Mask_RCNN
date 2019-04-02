@@ -34,7 +34,7 @@ import json
 import datetime
 import numpy as np
 import skimage.draw
-
+import cv2 as cv
 # Root directory of the project
 ROOT_DIR = os.path.abspath("../../")
 
@@ -91,72 +91,84 @@ class HumanDataset(utils.Dataset):
         subset: Subset to load: train or val
         """
         # Add classes. We have only one class to add.
-        for i in len(Parsing_classes):
-            self.add_class("human", i, Parsing_classes[i])
+        self.add_class("human", 1, "Hat")
+        self.add_class("human", 2, "Hair")
+        self.add_class("human", 3, "Glove")
+        self.add_class("human", 4, "Sunglasses")
+        self.add_class("human", 5, "UpperCloths")
+        self.add_class("human", 6, "Dress")
+        self.add_class("human", 7, "Coat")
+        self.add_class("human", 8, "Socks")
+        self.add_class("human", 9, "Pants")
+        self.add_class("human", 10, "Jumpsuits")
+        self.add_class("human", 11, "Scarf")
+        self.add_class("human", 12, "Skirt")
+        self.add_class("human", 13, "Face")
+        self.add_class("human", 14, "Left-arm")
+        self.add_class("human", 15, "Right-arm")
+        self.add_class("human", 16, "Left-leg")
+        self.add_class("human", 17, "Right-leg")
+        self.add_class("human", 18, "Left-shoe")
+        self.add_class("human", 19, "Right-shoe")
 
         # Train or validation dataset?
         assert subset in ["train", "val"]
+        dataset_list = os.path.join(dataset_dir, "list/%s_id.txt" subset) 
         dataset_dir = os.path.join(dataset_dir, subset)
-        # To Be Written
-        # annotations = json.load(open(os.path.join(dataset_dir, "via_region_data.json")))
-        # annotations = list(annotations.values())  # don't need the dict keys
+        
+        f = open(data_list, 'r')
 
-        # # The VIA tool saves images in the JSON even if they don't have any
-        # # annotations. Skip unannotated images.
-        # annotations = [a for a in annotations if a['regions']]
+        for img in f:
+            # Get Image Information
+            image_path = os.path.join(dataset_dir, '%s_images/%s' subset, img)
+            image = skimage.io.imread(image_path)
 
-        # # Add images
-        # for a in annotations:
-        #     # Get the x, y coordinaets of points of the polygons that make up
-        #     # the outline of each object instance. These are stores in the
-        #     # shape_attributes (see json format above)
-        #     # The if condition is needed to support VIA versions 1.x and 2.x.
-        #     if type(a['regions']) is dict:
-        #         polygons = [r['shape_attributes'] for r in a['regions'].values()]
-        #     else:
-        #         polygons = [r['shape_attributes'] for r in a['regions']] 
-
-        #     # load_mask() needs the image size to convert polygons to masks.
-        #     # Unfortunately, VIA doesn't include it in JSON, so we must read
-        #     # the image. This is only managable since the dataset is tiny.
-        #     image_path = os.path.join(dataset_dir, a['filename'])
-        #     image = skimage.io.imread(image_path)
-        #     height, width = image.shape[:2]
-
-        #     self.add_image(
-        #         "balloon",
-        #         image_id=a['filename'],  # use file name as a unique image id
-        #         path=image_path,
-        #         width=width, height=height,
-        #         polygons=polygons)
+            self.add_image(
+                "human", 
+                image_id=img, 
+                path = image_path
+                subset = subset)
 
     def load_mask(self, image_id):
-    # To Be Written
-    #     """Generate instance masks for an image.
-    #    Returns:
-    #     masks: A bool array of shape [height, width, instance count] with
-    #         one mask per instance.
-    #     class_ids: a 1D array of class IDs of the instance masks.
-    #     """
-    #     # If not a balloon dataset image, delegate to parent class.
-    #     image_info = self.image_info[image_id]
-    #     if image_info["source"] != "balloon":
-    #         return super(self.__class__, self).load_mask(image_id)
+        """Generate instance masks for an image.
+       Returns:
+        masks: A bool array of shape [height, width, instance count] with
+            one mask per instance.
+        class_ids: a 1D array of class IDs of the instance masks.
+        """
+        # If not a human dataset image, delegate to parent class.
+        seg_dir = os.path.join(os.path.dirname(os.path.dirname(info['path'])), "masks")
 
-    #     # Convert polygons to a bitmap mask of shape
-    #     # [height, width, instance_count]
-    #     info = self.image_info[image_id]
-    #     mask = np.zeros([info["height"], info["width"], len(info["polygons"])],
-    #                     dtype=np.uint8)
-    #     for i, p in enumerate(info["polygons"]):
-    #         # Get indexes of pixels inside the polygon and set them to 1
-    #         rr, cc = skimage.draw.polygon(p['all_points_y'], p['all_points_x'])
-    #         mask[rr, cc, i] = 1
+        # Get Image Segmentation
+        img_seg = cv.imread(seg_dir+'%s_segmentations/%s' subset, img)
+        img_seg = cv.cvtColor(img_seg, cv.COLOR_BGR2GRAY)
+        classes_seg = np.unique(img_seg)
+        seg_contours = []
+        class_id
 
-    #     # Return mask, and array of class IDs of each instance. Since we have
-    #     # one class ID only, we return an array of 1s
-    #     return mask.astype(np.bool), np.ones([mask.shape[-1]], dtype=np.int32)
-        pass
+        for i in len(classes_seg):
+            if classes_seg[i] == 0:
+                continue
+            img_seg2 = img_seg.copy()
+            img_seg2[img_seg2 != classes_seg[i]] = 0
+            print("Claculate for class:", classes_seg[i])
+
+            # Find contours of the shape
+            contours, _ = cv.findContours(img_seg2, 
+                                        cv.RETR_LIST, 
+                                        cv.CHAIN_APPROX_NONE) 
+            contours_y = []
+            contours_x = []
+            for i in range(len(contours)):
+                for j in range(len(contours[i])):
+                    contours_y.append(contours[i][j][0][0])
+                    contours_x.append(contours[i][j][0][1])
+
+            seg_contours.append([contours_y, contours_x, i])
+            class_id.append(classes_seg[i])
+
+         return seg_contours.astype(np.bool), class_id
+
     def image_reference(self, image_id):
         """Return the path of the image."""
         info = self.image_info[image_id]
