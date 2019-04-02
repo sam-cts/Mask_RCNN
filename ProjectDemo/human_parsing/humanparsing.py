@@ -51,13 +51,6 @@ DEFAULT_LOGS_DIR = os.path.join(ROOT_DIR, "logs")
 #  Configurations
 ############################################################
 
-# Human Parsing dataset has 18 classes including background
-#below is a list of classes
-Parsing_classes = ['background', 'hat', 'hair', 'glove', 'sunglasses', 'upperclothes',
-                   'dress', 'coat', 'socks', 'pants', 'jumpsuits', 'scarf', 'skirt',
-                   'face', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg', 'leftShoe',
-                   'rightShoe']
-
 class HumanConfig(Config):
     """Configuration for training on the toy  dataset.
     Derives from the base Config class and overrides some values.
@@ -77,7 +70,6 @@ class HumanConfig(Config):
 
     # Skip detections with < 90% confidence
     DETECTION_MIN_CONFIDENCE = 0.9
-
 
 ############################################################
 #  Dataset
@@ -113,20 +105,23 @@ class HumanDataset(utils.Dataset):
 
         # Train or validation dataset?
         assert subset in ["train", "val"]
-        dataset_list = os.path.join(dataset_dir, "list/%s_id.txt" subset) 
         dataset_dir = os.path.join(dataset_dir, subset)
-        
-        f = open(data_list, 'r')
+        dataset_list = os.path.join(dataset_dir, "{}_id.txt".format(subset))
 
+        f = open(dataset_list, 'r')
+        f = f.read().splitlines()
         for img in f:
             # Get Image Information
-            image_path = os.path.join(dataset_dir, '%s_images/%s' subset, img)
+            image_path = os.path.join(dataset_dir, "{}_images/{}.jpg".format(subset,img))
             image = skimage.io.imread(image_path)
-
+            height, width = image.shape[:2]
+            
             self.add_image(
                 "human", 
                 image_id=img, 
-                path = image_path
+                path = image_path,
+                # width=width, 
+                # height=height,
                 subset = subset)
 
     def load_mask(self, image_id):
@@ -137,37 +132,52 @@ class HumanDataset(utils.Dataset):
         class_ids: a 1D array of class IDs of the instance masks.
         """
         # If not a human dataset image, delegate to parent class.
-        seg_dir = os.path.join(os.path.dirname(os.path.dirname(info['path'])), "masks")
+        info = self.image_info[image_id]
+        seg_dir = os.path.join(os.path.dirname(os.path.dirname(info['path'])), 
+        "{}_segmentations".format(info['subset']))
 
         # Get Image Segmentation
-        img_seg = cv.imread(seg_dir+'%s_segmentations/%s' subset, img)
+        img_seg = cv.imread(os.path.join(seg_dir, info['id'] +".png"))
         img_seg = cv.cvtColor(img_seg, cv.COLOR_BGR2GRAY)
         classes_seg = np.unique(img_seg)
-        seg_contours = []
-        class_id
+        mask = []
+        class_id = []
 
-        for i in len(classes_seg):
-            if classes_seg[i] == 0:
+        for i in range(len(classes_seg)):
+            if i == 0:
                 continue
+
             img_seg2 = img_seg.copy()
             img_seg2[img_seg2 != classes_seg[i]] = 0
-            print("Claculate for class:", classes_seg[i])
-
-            # Find contours of the shape
-            contours, _ = cv.findContours(img_seg2, 
-                                        cv.RETR_LIST, 
-                                        cv.CHAIN_APPROX_NONE) 
-            contours_y = []
-            contours_x = []
-            for i in range(len(contours)):
-                for j in range(len(contours[i])):
-                    contours_y.append(contours[i][j][0][0])
-                    contours_x.append(contours[i][j][0][1])
-
-            seg_contours.append([contours_y, contours_x, i])
+            mask.append(img_seg2.astype(np.bool))
             class_id.append(classes_seg[i])
 
-         return seg_contours.astype(np.bool), class_id
+        # for i in range(len(classes_seg)):
+        #     if classes_seg[i] == 0:
+        #         continue
+        #     img_seg2 = img_seg.copy()
+        #     img_seg2[img_seg2 != classes_seg[i]] = 0
+        #     contours, _ = cv.findContours(img_seg2, 
+        #     cv.RETR_LIST, cv.CHAIN_APPROX_NONE)    # Find contours of the shape
+        #     contours_y = []
+        #     contours_x = []
+        #     for i in range(len(contours)):
+        #         for j in range(len(contours[i])):
+        #             contours_y.append(contours[i][j][0][0])
+        #             contours_x.append(contours[i][j][0][1])
+        #     mask_temp = np.zeros([info["height"], 
+        #                 info["width"], 
+        #                 len(contours)],
+        #                 dtype=np.uint8)
+        #     rr, cc = skimage.draw.polygon(contours_y, contours_x)
+        #     mask_temp[rr, cc, i] = 1
+        #     mask.append(mask_temp.astype(np.bool))
+        #     class_id.append(classes_seg[i])
+
+        if class_id:
+            mask = np.stack(mask, axis=2).astype(np.bool)
+            class_id = np.array(class_id, dtype=np.int32)
+            return mask, class_id
 
     def image_reference(self, image_id):
         """Return the path of the image."""

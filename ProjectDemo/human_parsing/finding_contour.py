@@ -6,36 +6,39 @@ import numpy as np
 import matplotlib.pyplot as plt 
 
 # Root directory of the project
-image_dir = "testimage"
+ROOT_DIR = os.path.abspath("../../")
+image_dir = ROOT_DIR+"/datasets/lip/train/train_segmentations/"
 
 #%%
-img_org = cv.imread(image_dir+'/train_images/77_471474.jpg')
-img_seg = cv.imread(image_dir+'/train_segmentations/77_471474.png')
+A = image_dir+'77_471474.png'
+print(A)
+img_seg = cv.imread(A)
 
-plt.subplot(1, 2, 1)
-plt.title('Original')
-plt.xticks([]), plt.yticks([])  # to hide tick values on X and Y axis
-plt.imshow(img_org)
+# plt.subplot(1, 2, 1)
+# plt.title('Original')
+# plt.xticks([]), plt.yticks([])  # to hide tick values on X and Y axis
+# plt.imshow(img_org)
 plt.subplot(1, 2, 2)
 plt.title('Segments')
 plt.xticks([]), plt.yticks([])  # to hide tick values on X and Y axis
 plt.imshow(img_seg)
 plt.show()
 
+# #%%
+# # This is to get mask from segments
+# img_seg_cvt= cv.cvtColor(img_seg, cv.COLOR_BGR2GRAY)    # Convert color space
+# plt.subplot(1, 2, 1)
+# plt.title('Segments')
+# plt.xticks([]), plt.yticks([])  # to hide tick values on X and Y axis
+# plt.imshow(img_seg)
+# plt.subplot(1, 2, 2)
+# plt.title('Convert')
+# plt.xticks([]), plt.yticks([])  # to hide tick values on X and Y axis
+# plt.imshow(img_seg_cvt)
+# plt.show()
+
 #%%
-# This is to get mask from segments
 img_seg_cvt= cv.cvtColor(img_seg, cv.COLOR_BGR2GRAY)    # Convert color space
-plt.subplot(1, 2, 1)
-plt.title('Segments')
-plt.xticks([]), plt.yticks([])  # to hide tick values on X and Y axis
-plt.imshow(img_seg)
-plt.subplot(1, 2, 2)
-plt.title('Convert')
-plt.xticks([]), plt.yticks([])  # to hide tick values on X and Y axis
-plt.imshow(img_seg_cvt)
-plt.show()
-
-#%%
 classes_seg = np.unique(img_seg_cvt)
 
 #%%
@@ -51,7 +54,15 @@ for i in classes_seg:
     plt.xticks([]), plt.yticks([])  # to hide tick values on X and Y axis
     plt.imshow(img_seg_cvt2)
     plt.show()
+#%%
+img_seg_cvt2 = img_seg_cvt.copy()
+img_seg_cvt2[img_seg_cvt2 != 15] = 0
 
+print(img_seg_cvt2)
+
+boolimg = img_seg_cvt2.astype(np.bool)
+
+print(boolimg)
 #%%    
 img_seg_cvt2 = img_seg_cvt.copy()
 img_seg_cvt2[img_seg_cvt2 != 15] = 0

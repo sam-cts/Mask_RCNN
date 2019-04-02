@@ -1,7 +1,7 @@
 #%% Change working directory from the workspace root to the ipynb file location. Turn this addition off with the DataScience.changeDirOnImportExport setting
 import os
 try:
-	os.chdir(os.path.join(os.getcwd(), 'ProjectDemo'))
+	os.chdir('/home/samcts/Documents/Github Repo/Mask_RCNN/ProjectDemo/human_parsing')
 	print(os.getcwd())
 except:
 	pass
@@ -28,7 +28,7 @@ import matplotlib.lines as lines
 from matplotlib.patches import Polygon
 
 # Root directory of the project
-ROOT_DIR = os.path.abspath("../")
+ROOT_DIR = os.path.abspath("../../")
 
 # Import Mask RCNN
 sys.path.append(ROOT_DIR)  # To find local version of the library
@@ -49,7 +49,7 @@ get_ipython().run_line_magic('matplotlib', 'inline')
 
 #%%
 config = humanparsing.HumanConfig()
-HUMAN_DIR = os.path.join(ROOT_DIR, "datasets/human")
+HUMAN_DIR = os.path.join(ROOT_DIR, "datasets/lip")
 
 #%% [markdown]
 # ## Dataset
@@ -75,6 +75,13 @@ for i, info in enumerate(dataset.class_info):
 #%%
 # Load and display random samples
 image_ids = np.random.choice(dataset.image_ids, 4)
+# print(image_ids, type(image_ids))
+
+image = dataset.load_image(5)
+mask, class_ids = dataset.load_mask(5)
+visualize.display_top_masks(image, mask, class_ids, dataset.class_names)
+
+#%%
 for image_id in image_ids:
     image = dataset.load_image(image_id)
     mask, class_ids = dataset.load_mask(image_id)
