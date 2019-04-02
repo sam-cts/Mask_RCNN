@@ -6,7 +6,7 @@ try:
 except:
 	pass
 #%% [markdown]
-# # Mask R-CNN - Inspect Balloon Training Data
+# # Mask R-CNN - Train on LIP Dataset
 # 
 # Inspect and visualize data loading and pre-processing code.
 
@@ -45,7 +45,7 @@ get_ipython().run_line_magic('matplotlib', 'inline')
 #%% [markdown]
 # ## Configurations
 # 
-# Configurations are defined in balloon.py
+# Configurations are defined in humanparsing.py
 
 #%%
 config = humanparsing.HumanConfig()
@@ -75,18 +75,21 @@ for i, info in enumerate(dataset.class_info):
 #%%
 # Load and display random samples
 image_ids = np.random.choice(dataset.image_ids, 4)
-# print(image_ids, type(image_ids))
-
-# image = dataset.load_image(1)
-# mask, class_ids = dataset.load_mask(1)
-# visualize.display_top_masks(image, mask, class_ids, dataset.class_names)
-
-#%%
 for image_id in image_ids:
     image = dataset.load_image(image_id)
     mask, class_ids = dataset.load_mask(image_id)
     visualize.display_top_masks(image, mask, class_ids, dataset.class_names)
+#%%
+image_ids = np.random.choice(dataset.image_ids, 50)
 
+for image_id in image_ids:
+    try:
+        image = dataset.load_image(image_id)
+        mask, class_ids = dataset.load_mask(image_id)
+        visualize.display_top_masks(image, mask, class_ids, dataset.class_names)
+    except:
+        print(dataset.image_info[image_id]['id'])
+        break
 #%% [markdown]
 # ## Bounding Boxes
 # 
@@ -383,7 +386,7 @@ if random_rois:
 #%%
 # Check ratio of positive ROIs in a set of images.
 if random_rois:
-    limit = 10
+    limit = 5
     temp_g = modellib.data_generator(
         dataset, config, shuffle=True, random_rois=10000, 
         batch_size=1, detection_targets=True)

@@ -46,7 +46,7 @@ from mrcnn import model as modellib, utils
 # Directory to save logs and model checkpoints, if not provided
 # through the command line argument --logs
 DEFAULT_LOGS_DIR = os.path.join(ROOT_DIR, "logs")
-
+COCO_WEIGHTS_PATH = os.path.join(ROOT_DIR, "mask_rcnn_coco.h5")
 ############################################################
 #  Configurations
 ############################################################
@@ -63,7 +63,7 @@ class HumanConfig(Config):
     IMAGES_PER_GPU = 1
 
     # Number of classes (including background)
-    NUM_CLASSES = 1 + 17  # 1 Background + 17 Parsing Catagories
+    NUM_CLASSES = 1 + 19  # 1 Background + 17 Parsing Catagories
 
     # Number of training steps per epochc
     STEPS_PER_EPOCH = 100
@@ -76,6 +76,8 @@ class HumanConfig(Config):
 ############################################################
 
 class HumanDataset(utils.Dataset):
+
+
 
     def load_human(self, dataset_dir, subset):
         """Load a subset of the Balloon dataset.
@@ -110,6 +112,7 @@ class HumanDataset(utils.Dataset):
 
         f = open(dataset_list, 'r')
         f = f.read().splitlines()
+        f = self.check_seg(f, dataset_dir, subset)
         for img in f:
             # Get Image Information
             image_path = os.path.join(dataset_dir, "{}_images/{}.jpg".format(subset,img))
@@ -152,28 +155,6 @@ class HumanDataset(utils.Dataset):
             mask.append(img_seg2.astype(np.bool))
             class_id.append(classes_seg[i])
 
-        # for i in range(len(classes_seg)):
-        #     if classes_seg[i] == 0:
-        #         continue
-        #     img_seg2 = img_seg.copy()
-        #     img_seg2[img_seg2 != classes_seg[i]] = 0
-        #     contours, _ = cv.findContours(img_seg2, 
-        #     cv.RETR_LIST, cv.CHAIN_APPROX_NONE)    # Find contours of the shape
-        #     contours_y = []
-        #     contours_x = []
-        #     for i in range(len(contours)):
-        #         for j in range(len(contours[i])):
-        #             contours_y.append(contours[i][j][0][0])
-        #             contours_x.append(contours[i][j][0][1])
-        #     mask_temp = np.zeros([info["height"], 
-        #                 info["width"], 
-        #                 len(contours)],
-        #                 dtype=np.uint8)
-        #     rr, cc = skimage.draw.polygon(contours_y, contours_x)
-        #     mask_temp[rr, cc, i] = 1
-        #     mask.append(mask_temp.astype(np.bool))
-        #     class_id.append(classes_seg[i])
-
         if class_id:
             mask = np.stack(mask, axis=2).astype(np.bool)
             class_id = np.array(class_id, dtype=np.int32)
@@ -186,6 +167,19 @@ class HumanDataset(utils.Dataset):
             return info["path"]
         else:
             super(self.__class__, self).image_reference(image_id)
+    
+
+    def check_seg(self, data_list, dataset_dir, subset):
+        seg_dir = os.path.join(dataset_dir, "{}_segmentations".format(subset))
+        filtered_list = []
+        for img_id in data_list:
+            img_seg = cv.imread(os.path.join(seg_dir, img_id +".png"))
+            img_seg = cv.cvtColor(img_seg, cv.COLOR_BGR2GRAY)
+            if len(np.unique(img_seg)) != 1:
+                filtered_list.append(img_id)
+        return filtered_list
+            
+
 
 
 def train(model):
@@ -209,27 +203,6 @@ def train(model):
                 learning_rate=config.LEARNING_RATE,
                 epochs=30,
                 layers='heads')
-
-
-def color_splash(image, mask):
-    """Apply color splash effect.
-    image: RGB image [height, width, 3]
-    mask: instance segmentation mask [height, width, instance count]
-
-    Returns result image.
-    """
-    # Make a grayscale copy of the image. The grayscale copy still
-    # has 3 RGB channels, though.
-    gray = skimage.color.gray2rgb(skimage.color.rgb2gray(image)) * 255
-    # Copy color pixels from the original color image where mask is set
-    if mask.shape[-1] > 0:
-        # We're treating all instances as one, so collapse the mask into one layer
-        mask = (np.sum(mask, -1, keepdims=True) >= 1)
-        splash = np.where(mask, image, gray).astype(np.uint8)
-    else:
-        splash = gray.astype(np.uint8)
-    return splash
-
 
 ############################################################
 #  Training
