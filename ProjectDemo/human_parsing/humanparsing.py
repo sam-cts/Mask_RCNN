@@ -66,6 +66,10 @@ class HumanConfig(Config):
     # Number of classes (including background)
     NUM_CLASSES = 1 + 19  # 1 Background + 17 Parsing Catagories
 
+    # # Reduce training ROIs per image because the images are small and have
+    # # few objects. Aim to allow ROI sampling to pick 33% positive ROIs.
+    # TRAIN_ROIS_PER_IMAGE = 60
+
     # Number of training steps per epochc
     STEPS_PER_EPOCH = 100
 
@@ -77,8 +81,6 @@ class HumanConfig(Config):
 ############################################################
 
 class HumanDataset(utils.Dataset):
-
-
 
     def load_human(self, dataset_dir, subset):
         """Load a subset of the Balloon dataset.
@@ -202,8 +204,17 @@ def train(model):
     print("Training network heads")
     model.train(dataset_train, dataset_val,
                 learning_rate=config.LEARNING_RATE,
-                epochs=30,
+                epochs=1,
                 layers='heads')
+
+    # Fine tune all layers
+    # Passing layers="all" trains all layers. You can also 
+    # pass a regular expression to select which layers to
+    # train by name pattern.
+    model.train(dataset_train, dataset_val, 
+                learning_rate=config.LEARNING_RATE / 10,
+                epochs=2, 
+                layers="all")
 
 ############################################################
 #  Training
