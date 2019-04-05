@@ -79,17 +79,6 @@ for image_id in image_ids:
     image = dataset.load_image(image_id)
     mask, class_ids = dataset.load_mask(image_id)
     visualize.display_top_masks(image, mask, class_ids, dataset.class_names)
-#%%
-image_ids = np.random.choice(dataset.image_ids, 50)
-
-for image_id in image_ids:
-    try:
-        image = dataset.load_image(image_id)
-        mask, class_ids = dataset.load_mask(image_id)
-        visualize.display_top_masks(image, mask, class_ids, dataset.class_names)
-    except:
-        print(dataset.image_info[image_id]['id'])
-        break
 #%% [markdown]
 # ## Bounding Boxes
 # 
@@ -397,7 +386,3 @@ if random_rois:
         total += positive_rois
         print("{:5} {:5.2f}".format(positive_rois, positive_rois/ids.shape[1]))
     print("Average percent: {:.2f}".format(total/(limit*ids.shape[1])))
-
-
-
-

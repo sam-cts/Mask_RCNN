@@ -41,10 +41,10 @@ get_ipython().run_line_magic('matplotlib', 'inline')
 # Directory to save logs and trained model
 MODEL_DIR = os.path.join(ROOT_DIR, "logs/")
 
-# Path to Ballon trained weights
+# Path to Human trained weights
 # You can download this file from the Releases page
 # https://github.com/matterport/Mask_RCNN/releases
-HUMAN_WEIGHTS_PATH = os.path.join(ROOT_DIR, "logs/human20190403T0229/mask_rcnn_human_0030.h5")  # TODO: update this path
+HUMAN_WEIGHTS_PATH = os.path.join(ROOT_DIR, "logs/human20190405T2230/mask_rcnn_human_0160.h5")  # TODO: update this path
 
 #%% [markdown]
 # ## Configurations
@@ -116,7 +116,7 @@ with tf.device(DEVICE):
 
 
 #%%
-# Set path to balloon weights file
+# Set path to human parsing weights file
 
 # Download file from the Releases page and set its path
 # https://github.com/matterport/Mask_RCNN/releases
@@ -124,18 +124,19 @@ with tf.device(DEVICE):
 
 # Or, load the last model you trained
 # weights_path = model.find_last()
-weights_path = os.path.join(MODEL_DIR, "human20190404T0624/mask_rcnn_human_0002.h5")
+weights_path = HUMAN_WEIGHTS_PATH
 # Load weights
 print("Loading weights ", weights_path)
-model.load_weights(weights_path, by_name=True, exclude=["mrcnn_class_logits", "mrcnn_bbox_fc", 
-                                "mrcnn_bbox", "mrcnn_mask"])
+model.load_weights(weights_path, by_name=True)
+# exclude=["mrcnn_class_logits", "mrcnn_bbox_fc", 
+#                                 "mrcnn_bbox", "mrcnn_mask"])
 
 #%% [markdown]
 # ## Run Detection
 
 #%%
 image_id = random.choice(dataset.image_ids)
-image, image_meta, gt_class_id, gt_bbox, gt_mask =    modellib.load_image_gt(dataset, config, image_id, use_mini_mask=False)
+image, image_meta, gt_class_id, gt_bbox, gt_mask = modellib.load_image_gt(dataset, config, image_id, use_mini_mask=False)
 info = dataset.image_info[image_id]
 print("image ID: {}.{} ({}) {}".format(info["source"], info["id"], image_id, 
                                        dataset.image_reference(image_id)))

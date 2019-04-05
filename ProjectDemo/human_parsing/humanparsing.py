@@ -1,12 +1,6 @@
 """
-To be edited
 Mask R-CNN
-Train on the toy Balloon dataset and implement color splash effect.
-
-Copyright (c) 2018 Matterport, Inc.
-Licensed under the MIT License (see LICENSE for details)
-Written by Waleed Abdulla
-
+Train on the LIP dataset
 ------------------------------------------------------------
 
 Usage: import the module (see Jupyter notebooks for examples), or run from
@@ -20,12 +14,6 @@ Usage: import the module (see Jupyter notebooks for examples), or run from
 
     # Train a new model starting from ImageNet weights
     python3 humanparsing.py train --dataset=/path/to/humanparsing/dataset --weights=imagenet
-
-    # Apply color splash to an image
-    python3 humanparsing.py splash --weights=/path/to/weights/file.h5 --image=<URL or path to file>
-
-    # Apply color splash to video using the last weights you trained
-    python3 humanparsing.py splash --weights=last --video=<URL or path to file>
 """
 
 import os
@@ -35,6 +23,10 @@ import datetime
 import numpy as np
 import skimage.draw
 import cv2 as cv
+import imgaug
+import tensorflow as tf
+
+# os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 # Root directory of the project
 ROOT_DIR = os.path.abspath("../../")
 
@@ -52,29 +44,26 @@ COCO_WEIGHTS_PATH = os.path.join(ROOT_DIR, "mask_rcnn_coco.h5")
 ############################################################
 
 class HumanConfig(Config):
-    """Configuration for training on the toy  dataset.
+    """Configuration for training on the LIP dataset.
     Derives from the base Config class and overrides some values.
     """
     # Give the configuration a recognizable name
     NAME = "human"
-
-    # We use a GPU with 12GB memory, which can fit two images.
-    # Adjust down if you use a smaller GPU.
     IMAGES_PER_GPU = 1
     GPU_COUNT = 1
 
     # Number of classes (including background)
-    NUM_CLASSES = 1 + 19  # 1 Background + 17 Parsing Catagories
+    NUM_CLASSES = 1 + 19  # 1 Background + 19 Parsing Catagories
 
     # # Reduce training ROIs per image because the images are small and have
     # # few objects. Aim to allow ROI sampling to pick 33% positive ROIs.
-    # TRAIN_ROIS_PER_IMAGE = 60
+    TRAIN_ROIS_PER_IMAGE = 33
 
     # Number of training steps per epochc
     STEPS_PER_EPOCH = 100
 
-    # Skip detections with < 90% confidence
-    DETECTION_MIN_CONFIDENCE = 0.9
+    # Skip detections with < 95% confidence
+    DETECTION_MIN_CONFIDENCE = 0.95
 
 ############################################################
 #  Dataset
@@ -83,7 +72,7 @@ class HumanConfig(Config):
 class HumanDataset(utils.Dataset):
 
     def load_human(self, dataset_dir, subset):
-        """Load a subset of the Balloon dataset.
+        """Load a subset of the LIP dataset.
         dataset_dir: Root directory of the dataset.
         subset: Subset to load: train or val
         """
@@ -119,15 +108,10 @@ class HumanDataset(utils.Dataset):
         for img in f:
             # Get Image Information
             image_path = os.path.join(dataset_dir, "{}_images/{}.jpg".format(subset,img))
-            image = skimage.io.imread(image_path)
-            height, width = image.shape[:2]
-            
             self.add_image(
                 "human", 
                 image_id=img, 
                 path = image_path,
-                # width=width, 
-                # height=height,
                 subset = subset)
 
     def load_mask(self, image_id):
@@ -199,22 +183,34 @@ def train(model):
 
     # *** This training schedule is an example. Update to your needs ***
     # Since we're using a very small dataset, and starting from
-    # COCO trained weights, we don't need to train too long. Also,
-    # no need to train all layers, just the heads should do it.
+    # COCO trained weights.
+
+    augmentation = imgaug.augmenters.Fliplr(0.5)
+
     print("Training network heads")
     model.train(dataset_train, dataset_val,
                 learning_rate=config.LEARNING_RATE,
-                epochs=1,
-                layers='heads')
+                epochs=40,
+                layers='heads',
+                augmentation=augmentation)
 
-    # Fine tune all layers
+    # Fine tune Resnet4 and up layers
     # Passing layers="all" trains all layers. You can also 
     # pass a regular expression to select which layers to
     # train by name pattern.
+    print("Fine Tune Resnet4 and up")
+    model.train(dataset_train, dataset_val, 
+                learning_rate=config.LEARNING_RATE,
+                epochs=120, 
+                layers="4+",
+                augmentation=augmentation)
+
+    print("Fine Tune all layers")
     model.train(dataset_train, dataset_val, 
                 learning_rate=config.LEARNING_RATE / 10,
-                epochs=2, 
-                layers="all")
+                epochs=160, 
+                layers="all",
+                augmentation=augmentation)
 
 ############################################################
 #  Training
@@ -239,12 +235,6 @@ if __name__ == '__main__':
                         default=DEFAULT_LOGS_DIR,
                         metavar="/path/to/logs/",
                         help='Logs and checkpoints directory (default=logs/)')
-    parser.add_argument('--image', required=False,
-                        metavar="path or URL to image",
-                        help='Image to apply the color splash effect on')
-    parser.add_argument('--video', required=False,
-                        metavar="path or URL to video",
-                        help='Video to apply the color splash effect on')
     args = parser.parse_args()
 
     # Validate arguments
@@ -271,12 +261,13 @@ if __name__ == '__main__':
     config.display()
 
     # Create model
+
     if args.command == "train":
         model = modellib.MaskRCNN(mode="training", config=config,
-                                  model_dir=args.logs)
+                                model_dir=args.logs)
     else:
         model = modellib.MaskRCNN(mode="inference", config=config,
-                                  model_dir=args.logs)
+                                model_dir=args.logs)
 
     # Select weights file to load
     if args.weights.lower() == "coco":
@@ -309,4 +300,4 @@ if __name__ == '__main__':
         train(model)
     else:
         print("'{}' is not recognized. "
-              "Use 'train' or 'splash'".format(args.command))
+              "Use 'train'".format(args.command))

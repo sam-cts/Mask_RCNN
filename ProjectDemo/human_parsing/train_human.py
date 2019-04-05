@@ -36,61 +36,49 @@ import mrcnn.model as modellib
 from mrcnn import visualize
 from mrcnn.model import log
 
+import humanparsing
+import imgaug
+
 get_ipython().run_line_magic('matplotlib', 'inline')
 
 # Directory to save logs and trained model
 MODEL_DIR = os.path.join(ROOT_DIR, "logs")
-
-#%%
-model = modellib.MaskRCNN(mode="training", config=config,
-                            model_dir=args.logs)
-humanparsing.train(model)
-
 
 #%% [markdown]
 # ## Configurations
 
 #%%
 class HumanConfig(Config):
-    """Configuration for training on the toy shapes dataset.
-    Derives from the base Config class and overrides values specific
-    to the toy shapes dataset.
+    """Configuration for training on the LIP dataset.
+    Derives from the base Config class and overrides some values.
     """
     # Give the configuration a recognizable name
     NAME = "human"
 
-    # Train on 1 GPU and 8 images per GPU. We can put multiple images on each
-    # GPU because the images are small. Batch size is 8 (GPUs * images/GPU).
+    IMAGES_PER_GPU = 5
     GPU_COUNT = 1
-    IMAGES_PER_GPU = 8
 
     # Number of classes (including background)
-    NUM_CLASSES = 1 + 17  # 1 Background + 17 Parsing Catagories
+    NUM_CLASSES = 1 + 19  # 1 Background + 19 Parsing Catagories
 
-    # Use small images for faster training. Set the limits of the small side
-    # the large side, and that determines the image shape.
-    IMAGE_MIN_DIM = 128
-    IMAGE_MAX_DIM = 128
+    # # Reduce training ROIs per image because the images are small and have
+    # # few objects. Aim to allow ROI sampling to pick 33% positive ROIs.
+    TRAIN_ROIS_PER_IMAGE = 33
 
-    # Use smaller anchors because our image and objects are small
-    RPN_ANCHOR_SCALES = (8, 16, 32, 64, 128)  # anchor side in pixels
-
-    # Reduce training ROIs per image because the images are small and have
-    # few objects. Aim to allow ROI sampling to pick 33% positive ROIs.
-    TRAIN_ROIS_PER_IMAGE = 32
-
-    # Use a small epoch since the data is simple
+    # Number of training steps per epochc
     STEPS_PER_EPOCH = 100
+
+    # Skip detections with < 95% confidence
+    DETECTION_MIN_CONFIDENCE = 0.95
 
     # use small validation steps since the epoch is small
     VALIDATION_STEPS = 5
-    
+
 config = HumanConfig()
 config.display()
 
 #%% [markdown]
 # ## Notebook Preferences
-
 #%%
 def get_ax(rows=1, cols=1, size=8):
     """Return a Matplotlib Axes array to be used in
@@ -104,16 +92,18 @@ def get_ax(rows=1, cols=1, size=8):
     return ax
 
 #%%
-# Training dataset
-dataset_train = HumanDataset()
-dataset_train.load_shapes(500, config.IMAGE_SHAPE[0], config.IMAGE_SHAPE[1])
+# Training dataset.
+
+datapath = os.path.join(ROOT_DIR, "datasets/lip")
+
+dataset_train = humanparsing.HumanDataset()
+dataset_train.load_human(datapath, "train")
 dataset_train.prepare()
 
 # Validation dataset
-dataset_val = ShapesDataset()
-dataset_val.load_shapes(50, config.IMAGE_SHAPE[0], config.IMAGE_SHAPE[1])
+dataset_val = humanparsing.HumanDataset()
+dataset_val.load_human(datapath, "val")
 dataset_val.prepare()
-
 
 #%%
 # Load and display random samples
@@ -131,51 +121,42 @@ for image_id in image_ids:
 model = modellib.MaskRCNN(mode="training", config=config,
                           model_dir=MODEL_DIR)
 
-
-#%%
-# Which weights to start with?
-init_with = "coco"  # imagenet, coco, or last
-
-if init_with == "imagenet":
-    model.load_weights(model.get_imagenet_weights(), by_name=True)
-elif init_with == "coco":
-    # Load weights trained on MS COCO, but skip layers that
-    # are different due to the different number of classes
-    # See README for instructions to download the COCO weights
-    model.load_weights(COCO_MODEL_PATH, by_name=True,
-                       exclude=["mrcnn_class_logits", "mrcnn_bbox_fc", 
-                                "mrcnn_bbox", "mrcnn_mask"])
-elif init_with == "last":
-    # Load the last model you trained and continue training
-    model.load_weights(model.find_last(), by_name=True)
-
 #%% [markdown]
 # ## Training
 # 
-# Train in two stages:
+# This training schedule is only an example, re-schedule to your dataset needs
+# This schedule follows Mask-RCNN paper's schedule on COCO dataset
+#
+# Train in three stages:
 # 1. Only the heads. Here we're freezing all the backbone layers and training only the randomly initialized layers (i.e. the ones that we didn't use pre-trained weights from MS COCO). To train only the head layers, pass `layers='heads'` to the `train()` function.
-# 
-# 2. Fine-tune all layers. For this simple example it's not necessary, but we're including it to show the process. Simply pass `layers="all` to train all layers.
+# 2. Fine-tune Resnet4's layer.
+# 2. Fine-tune all layers.
 
-#%%
-# Train the head branches
-# Passing layers="heads" freezes all layers except the head
-# layers. You can also pass a regular expression to select
-# which layers to train by name pattern.
-model.train(dataset_train, dataset_val, 
-            learning_rate=config.LEARNING_RATE, 
-            epochs=1, 
+    # *** This training schedule is an example. Update to your needs ***
+    # Since we're using a very small dataset, and starting from
+    # COCO trained weights.
+# augmentation = imgaug.augmenters.Fliplr(0.5)
+
+print("Training network heads")
+model.train(dataset_train, dataset_val,
+            learning_rate=config.LEARNING_RATE,
+            epochs=40,
             layers='heads')
 
-
-#%%
-# Fine tune all layers
+# Fine tune Resnet4 and up layers
 # Passing layers="all" trains all layers. You can also 
 # pass a regular expression to select which layers to
 # train by name pattern.
+print("Fine Tune Resnet4 and up")
 model.train(dataset_train, dataset_val, 
-            learning_rate=config.LEARNING_RATE / 10,
-            epochs=2, 
+            learning_rate=config.LEARNING_RATE,
+            epochs=120, 
+            layers="4+")
+
+print("Fine Tune all layers")
+model.train(dataset_train, dataset_val, 
+            learning_rate=config.(LEARNING_RATE / 10),
+            epochs=160, 
             layers="all")
 
 
@@ -190,7 +171,7 @@ model.train(dataset_train, dataset_val,
 # ## Detection
 
 #%%
-class InferenceConfig(ShapesConfig):
+class InferenceConfig(HumanConfig):
     GPU_COUNT = 1
     IMAGES_PER_GPU = 1
 
