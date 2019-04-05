@@ -1,10 +1,3 @@
-#%% Change working directory from the workspace root to the ipynb file location. Turn this addition off with the DataScience.changeDirOnImportExport setting
-import os
-try:
-	os.chdir('/home/samcts/Documents/Github Repo/Mask_RCNN/ProjectDemo/human_parsing')
-	print(os.getcwd())
-except:
-	pass
 #%% [markdown]
 # # Mask R-CNN - Train on LIP Dataset
 # 
