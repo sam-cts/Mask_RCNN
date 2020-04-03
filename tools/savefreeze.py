@@ -17,7 +17,7 @@ ROOT_DIR = os.getcwd()
 sys.path.append(ROOT_DIR)  # To find local version of the library
 from mrcnn import model as modellib
 from mrcnn import utils
-from samples.chips import chips_fullstack_whole_network
+from samples.chips import chips_occlusion_whole_network
 K.clear_session()
 K.set_learning_phase(0)
 
@@ -27,8 +27,8 @@ K.set_learning_phase(0)
 
 
 # Model Directory
-MODEL_DIR = "/datasets/models/mrcnn/fullstack_fullnetwork/chips20200326T0339/"
-DEFAULT_WEIGHTS = "/datasets/models/mrcnn/fullstack_fullnetwork/chips20200326T0339/mask_rcnn_chips_0030.h5"
+MODEL_DIR = "/datasets/models/mrcnn/occlusion_fullnetwork/chips20200325T0525/"
+DEFAULT_WEIGHTS = "/datasets/models/mrcnn/occlusion_fullnetwork/chips20200325T0525/mask_rcnn_chips_0160.h5"
 
 ##############################################################################
 # Load configuration
@@ -36,7 +36,7 @@ DEFAULT_WEIGHTS = "/datasets/models/mrcnn/fullstack_fullnetwork/chips20200326T03
 
 
 
-class InferenceConfig(chips_fullstack_whole_network.ChipsConfig):
+class InferenceConfig(chips_occlusion_whole_network.ChipsConfig):
         # Set batch size to 1 since we'll be running inference on
         # one image at a time. Batch size = GPU_COUNT * IMAGES_PER_GPU
         GPU_COUNT = 1
@@ -104,24 +104,24 @@ if __name__ == "__main__":
     model.keras_model.inputs
 
     # export to savedmodel
-    saved_model_name = os.path.join(model_dir, "mask_rcnn_chips_builder_no_sign.pb")
+    saved_model_name = os.path.join(model_dir, "mask_rcnn_chips_occlusion")
     # builder = tf.compat.v1.saved_model.builder.SavedModelBuilder(saved_model_name)                                                                                                                  
     print(model.keras_model.inputs)
     print(model.keras_model.outputs)
-    signature = tf.saved_model.signature_def_utils.predict_signature_def(                                                                        
-        inputs={'image': model.keras_model.input[0]}, 
-        outputs={'class': model.keras_model.output[1], 
-                 'bbox': model.keras_model.output[2], 
-                 'mask': model.keras_model.output[3]})                                                                         
+    # signature = tf.saved_model.signature_def_utils.predict_signature_def(                                                                        
+    #     inputs={'image': model.keras_model.input[0]}, 
+    #     outputs={'class': model.keras_model.output[1], 
+    #              'bbox': model.keras_model.output[2], 
+    #              'mask': model.keras_model.output[3]})                                                                         
                                                                                                                                                 
     builder = tf.saved_model.builder.SavedModelBuilder(saved_model_name)                                                                    
     builder.add_meta_graph_and_variables(                                                                                                        
         sess=K.get_session(),                                                                                                                    
-        tags=["chips"],                                                                                             
-        signature_def_map={                                                                                                                      
-            tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY:                                                                
-                signature                                                                                                                        
-        }
+        tags=["serve"],                                                                                             
+        # signature_def_map={                                                                                                                      
+        #     tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY:                                                                
+        #         signature                                                                                                                        
+        # }
         )                                                                                                                                       
     builder.save()
 

@@ -33,7 +33,7 @@ import json
 import datetime
 import numpy as np
 import skimage.draw
-
+import imgaug
 # Root directory of the project
 ROOT_DIR = os.path.abspath("../../")
 
@@ -69,7 +69,7 @@ class ChipsConfig(Config):
     NUM_CLASSES = 1 + 1  # Background + chips
 
     # Number of training steps per epoch
-    # STEPS_PER_EPOCH = 100
+    STEPS_PER_EPOCH = 100
 
     # Skip detections with < 90% confidence
     DETECTION_MIN_CONFIDENCE = 0.9

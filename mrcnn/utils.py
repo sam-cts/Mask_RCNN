@@ -591,18 +591,30 @@ def generate_anchors(scales, ratios, shape, feature_stride, anchor_stride):
     """
     # Get all combinations of scales and ratios
     scales, ratios = np.meshgrid(np.array(scales), np.array(ratios))
+    print(f'scales: {scales}')
+    print(f'ratios: {ratios}')
     scales = scales.flatten()
     ratios = ratios.flatten()
-
+    print(f'scales: {scales}')
+    print(f'ratios: {ratios}')
     # Enumerate heights and widths from scales and ratios
     heights = scales / np.sqrt(ratios)
     widths = scales * np.sqrt(ratios)
+    print(f'length heights: {len(heights)}')
+    print(f'length widths : {len(widths)}')
+
+    print(f'heights: {heights}')
+    print(f'widths : {widths}')
 
     # Enumerate shifts in feature space
     shifts_y = np.arange(0, shape[0], anchor_stride) * feature_stride
     shifts_x = np.arange(0, shape[1], anchor_stride) * feature_stride
+    print(f'shiftsy: {shifts_y}')
+    print(f'shiftsx: {shifts_x}')
     shifts_x, shifts_y = np.meshgrid(shifts_x, shifts_y)
-
+    print(f'feature stride:  {feature_stride}')
+    print(f'shiftsy Mesh: {shifts_y}')
+    print(f'shiftsx Mesh: {shifts_x}')
     # Enumerate combinations of shifts, widths, and heights
     box_widths, box_centers_x = np.meshgrid(widths, shifts_x)
     box_heights, box_centers_y = np.meshgrid(heights, shifts_y)
@@ -612,9 +624,13 @@ def generate_anchors(scales, ratios, shape, feature_stride, anchor_stride):
         [box_centers_y, box_centers_x], axis=2).reshape([-1, 2])
     box_sizes = np.stack([box_heights, box_widths], axis=2).reshape([-1, 2])
 
+    print(f"box_centers[0]: {box_centers[0]}")
+    print(f"box_sizes[0]  : {box_sizes[0]}")
     # Convert to corner coordinates (y1, x1, y2, x2)
     boxes = np.concatenate([box_centers - 0.5 * box_sizes,
                             box_centers + 0.5 * box_sizes], axis=1)
+    print(f"boxes[0]:    {boxes[0]}")
+    # print(f"boxes[1000]: {boxes[1000]}")
     return boxes
 
 
@@ -861,6 +877,7 @@ def norm_boxes(boxes, shape):
         [N, (y1, x1, y2, x2)] in normalized coordinates
     """
     h, w = shape
+    print(shape)
     scale = np.array([h - 1, w - 1, h - 1, w - 1])
     shift = np.array([0, 0, 1, 1])
     return np.divide((boxes - shift), scale).astype(np.float32)
