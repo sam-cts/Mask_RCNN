@@ -75,7 +75,7 @@ class ChipsConfig(Config):
     DETECTION_MIN_CONFIDENCE = 0.9
 
     # Set GPU Count to 2
-    GPU_COUNT = 2
+    GPU_COUNT = 1
 ############################################################
 #  Dataset
 ############################################################

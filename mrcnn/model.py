@@ -2521,15 +2521,15 @@ class MaskRCNN():
             log("molded_images", molded_images)
             log("image_metas", image_metas)
             log("anchors", anchors)
-            print(f"anchors[0]: {anchors[0][0]}")
-            print(f"anchors[1000]: {anchors[0][1000]}")
-            print(molded_images[0][500][0])
-            print(molded_images[0][500][500])
+            # print(f"anchors[0]: {anchors[0][0]}")
+            # print(f"anchors[1000]: {anchors[0][1000]}")
+            # print(molded_images[0][500][0])
+            # print(molded_images[0][500][500])
         
         # Run object detection
         detections, _, _, mrcnn_mask, _, _, _ =\
             self.keras_model.predict([molded_images, image_metas, anchors], verbose=0)
-        print(detections)
+        # print(detections)
         # Process detections
         results = []
         for i, image in enumerate(images):
@@ -2606,7 +2606,7 @@ class MaskRCNN():
     def get_anchors(self, image_shape):
         """Returns anchor pyramid for the given image size."""
         backbone_shapes = compute_backbone_shapes(self.config, image_shape)
-        print(f'backboneshape: {backbone_shapes}')
+        # print(f'backboneshape: {backbone_shapes}')
         # Cache anchors and reuse if image shape is the same
         if not hasattr(self, "_anchor_cache"):
             self._anchor_cache = {}
@@ -2622,8 +2622,8 @@ class MaskRCNN():
             # it's used in inspect_model notebooks.
             # TODO: Remove this after the notebook are refactored to not use it
             self.anchors = a
-            print(f"a[0]:    {a[0]}")
-            print(f"a[1000]: {a[1000]}")
+            # print(f"a[0]:    {a[0]}")
+            # print(f"a[1000]: {a[1000]}")
             # Normalize coordinates
             self._anchor_cache[tuple(image_shape)] = utils.norm_boxes(a, image_shape[:2])
         return self._anchor_cache[tuple(image_shape)]
