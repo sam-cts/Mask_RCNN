@@ -74,7 +74,9 @@ class ChipsConfig(Config):
     # Skip detections with < 90% confidence
     DETECTION_MIN_CONFIDENCE = 0.9
 
-
+    LEARNING_RATE = 0.0001
+    USE_MINI_MASK = False
+    GPU_COUNT = 2
 ############################################################
 #  Dataset
 ############################################################
@@ -197,8 +199,8 @@ def train(model):
                 learning_rate=config.LEARNING_RATE,
                 epochs=30,
                 layers='heads')
-
-
+DATA_DIR = "/datasets"
+DEFAULT_DATA_DIR = os.path.join(DATA_DIR, "Chips/20200515_idNerd_chips_full_anno")
 ############################################################
 #  Training
 ############################################################
@@ -213,15 +215,16 @@ if __name__ == '__main__':
                         metavar="<command>",
                         help="'train' or 'splash'")
     parser.add_argument('--dataset', required=False,
+                        default=DEFAULT_DATA_DIR,
                         metavar="/path/to/balloon/dataset/",
-                        help='Directory of the Balloon dataset')
+                        help='Directory of the Chips dataset')
     parser.add_argument('--weights', required=True,
                         metavar="/path/to/weights.h5",
                         help="Path to weights .h5 file or 'coco'")
     parser.add_argument('--logs', required=False,
                         default=DEFAULT_LOGS_DIR,
                         metavar="/path/to/logs/",
-                        help='Logs and checkpoints directory (default=logs/)')
+                        help='Logs and checkpoints directory (default=/datasets/models)')
     parser.add_argument('--image', required=False,
                         metavar="path or URL to image",
                         help='Image to apply the color splash effect on')

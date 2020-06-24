@@ -17,7 +17,7 @@ ROOT_DIR = os.getcwd()
 sys.path.append(ROOT_DIR)  # To find local version of the library
 from mrcnn import model as modellib
 from mrcnn import utils
-from samples.chips import chips_occlusion_whole_network
+from samples.chips import chips_fullstack
 K.clear_session()
 K.set_learning_phase(0)
 
@@ -27,8 +27,8 @@ K.set_learning_phase(0)
 
 
 # Model Directory
-MODEL_DIR = "/datasets/models/mrcnn/occlusion_fullnetwork/chips20200325T0525/"
-DEFAULT_WEIGHTS = "/datasets/models/mrcnn/occlusion_fullnetwork/chips20200325T0525/mask_rcnn_chips_0160.h5"
+MODEL_DIR = "/datasets/models/mrcnn/fullstack_fullnetwork/chips20200513T0630/"
+DEFAULT_WEIGHTS = "/datasets/models/mrcnn/fullstack_fullnetwork/chips20200513T0630/mask_rcnn_chips_0030.h5"
 
 ##############################################################################
 # Load configuration
@@ -36,7 +36,7 @@ DEFAULT_WEIGHTS = "/datasets/models/mrcnn/occlusion_fullnetwork/chips20200325T05
 
 
 
-class InferenceConfig(chips_occlusion_whole_network.ChipsConfig):
+class InferenceConfig(chips_fullstack.ChipsConfig):
         # Set batch size to 1 since we'll be running inference on
         # one image at a time. Batch size = GPU_COUNT * IMAGES_PER_GPU
         GPU_COUNT = 1
@@ -104,7 +104,7 @@ if __name__ == "__main__":
     model.keras_model.inputs
 
     # export to savedmodel
-    saved_model_name = os.path.join(model_dir, "mask_rcnn_chips_occlusion")
+    saved_model_name = os.path.join(model_dir, "idNerd_chips")
     # builder = tf.compat.v1.saved_model.builder.SavedModelBuilder(saved_model_name)                                                                                                                  
     print(model.keras_model.inputs)
     print(model.keras_model.outputs)
